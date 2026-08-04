@@ -1,0 +1,85 @@
+name: build-windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download bkcrack (KPA engine)
+        shell: bash
+        run: |
+          mkdir -p tools/bkcrack
+          curl -sL -o /tmp/bkcrack.zip \
+            "https://github.com/kimci86/bkcrack/releases/download/v1.7.1/bkcrack-1.7.1-win64.zip"
+          cd tools/bkcrack
+          unzip -o /tmp/bkcrack.zip
+          ls -la
+
+      - name: Download john for hash extraction
+        shell: bash
+        run: |
+          mkdir -p tools/john
+          curl -sL -o /tmp/john.zip \
+            "https://github.com/openwall/john/releases/download/jumbo-1.9.0/john-1.9.0-jumbo-1-win64.zip"
+          cd tools/john
+          unzip -o /tmp/john.zip
+          # 把 2john exe 提升到顶层便于 find_tool 命中
+          find . -name "zip2john.exe" -exec cp {} . \;
+          find . -name "rar2john.exe" -exec cp {} . \;
+          find . -name "7z2john*" -exec cp {} . \; 2>/dev/null || true
+          ls -la
+
+      - name: Download hashcat (GPU engine)
+        shell: bash
+        run: |
+          mkdir -p tools/hashcat
+          curl -sL -o /tmp/hashcat.7z \
+            "https://hashcat.net/files/hashcat-6.2.6.7z"
+          7z x -y -o/tmp/hashcat /tmp/hashcat.7z > /dev/null
+          cp -r /tmp/hashcat/hashcat-6.2.6/* tools/hashcat/ 2>/dev/null || cp -r /tmp/hashcat/* tools/hashcat/
+          ls tools/hashcat/hashcat.exe
+
+      - name: Build with PyInstaller
+        shell: bash
+        run: |
+          python -m PyInstaller --onefile --windowed --name ArchiveCracker \
+            --icon icon.ico \
+            --hidden-import PyQt5 \
+            --hidden-import rarfile \
+            --hidden-import py7zr \
+            --hidden-import pyzipper \
+            --hidden-import py7zlib \
+            --noconfirm \
+            cracker.py
+
+      - name: Assemble portable package
+        shell: bash
+        run: |
+          mkdir -p release/ArchiveCracker
+          cp dist/ArchiveCracker.exe release/ArchiveCracker/
+          cp -r tools release/ArchiveCracker/
+          cp README.md release/ArchiveCracker/
+          cd release
+          powershell -Command "Compress-Archive -Path ArchiveCracker -DestinationPath ArchiveCracker-windows.zip -Force"
+          ls -la ArchiveCracker-windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArchiveCracker-windows
+          path: release/ArchiveCracker-windows.zip
+          if-no-files-found: error
