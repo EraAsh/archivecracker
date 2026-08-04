@@ -53,8 +53,16 @@ def find_tool(names):
     try:
         exe_dir = os.path.dirname(sys.executable)
         for n in names:
-            for sub in ('', 'hashcat', 'bkcrack', 'john', 'tools'):
+            # tools/<sub>/<tool> 和 tools/<tool> 两级路径
+            for sub in ('', 'hashcat', 'bkcrack', 'john', 'tools', 'tools/hashcat', 'tools/bkcrack', 'tools/john'):
                 fp = os.path.join(exe_dir, sub, n)
+                if os.path.isfile(fp):
+                    return fp
+            # john 的 2john 工具在嵌套 run/ 目录下；bkcrack 在版本子目录下
+            for dn in ('john/run', 'tools/john/run',
+                       'john-1.9.0-jumbo-1-win64/run', 'tools/john/python2john',
+                       'bkcrack-1.7.1-win64', 'tools/bkcrack/bkcrack-1.7.1-win64'):
+                fp = os.path.join(exe_dir, dn, n)
                 if os.path.isfile(fp):
                     return fp
     except Exception:
