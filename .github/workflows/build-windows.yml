@@ -35,7 +35,7 @@ jobs:
         run: |
           mkdir -p tools/john
           curl -sL -o /tmp/john.zip \
-            "https://github.com/openwall/john/releases/download/jumbo-1.9.0/john-1.9.0-jumbo-1-win64.zip"
+            "https://www.openwall.com/john/k/john-1.9.0-jumbo-1-win64.zip"
           cd tools/john
           unzip -o /tmp/john.zip
           # 把 2john exe 提升到顶层便于 find_tool 命中
