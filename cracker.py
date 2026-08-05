@@ -1052,7 +1052,7 @@ class BruteForceTab(QWidget):
 
         layout.addWidget(cs_group)
 
-        # ── Parameters ──
+        # ── 参数卡片 ──
         pg = QGroupBox("参数设置")
         pg_layout = QGridLayout(pg)
         pg_layout.setSpacing(10)
@@ -1075,11 +1075,26 @@ class BruteForceTab(QWidget):
         self.spin_threads.setFixedWidth(80)
         pg_layout.addWidget(self.spin_threads, 1, 1)
 
-        self.chk_hashcat = QCheckBox("GPU 加速")
-        self.chk_hashcat.setChecked(True)
-        pg_layout.addWidget(self.chk_hashcat, 2, 0, 1, 2)
-
         layout.addWidget(pg)
+
+        # ── 引擎卡片 ──
+        eg = QGroupBox("破解引擎")
+        eg_layout = QVBoxLayout(eg)
+        eg_layout.setSpacing(10)
+        eng_row = QHBoxLayout()
+        self.chk_cpu = QCheckBox("CPU")
+        self.chk_cpu.setChecked(True)
+        eng_row.addWidget(self.chk_cpu)
+        self.chk_hashcat = QCheckBox("GPU 加速 (hashcat)")
+        self.chk_hashcat.setChecked(True)
+        eng_row.addWidget(self.chk_hashcat)
+        eng_row.addStretch()
+        eg_layout.addLayout(eng_row)
+        ghint = QLabel("选择 CPU 或 GPU，或两者并行。GPU 需单独安装 hashcat。")
+        ghint.setObjectName("hint")
+        eg_layout.addWidget(ghint)
+        layout.addWidget(eg)
+
         layout.addStretch()
 
     def _toggle_advanced(self):
@@ -1116,7 +1131,6 @@ class MaskTab(QWidget):
         self.mask_input = QLineEdit()
         self.mask_input.setPlaceholderText("例: ?u?l?l?l?d?d?d")
         gl.addWidget(self.mask_input, 0, 1)
-
         ref = QLabel(
             "?l=a-z  ?u=A-Z  ?d=0-9  ?s=特殊  ?a=全部  ?1~?4=自定义\n"
             "例: pass?d?d?d → pass000~pass999"
@@ -1124,10 +1138,15 @@ class MaskTab(QWidget):
         ref.setObjectName("hint")
         ref.setWordWrap(True)
         gl.addWidget(ref, 1, 0, 1, 2)
-        self.chk_hashcat = QCheckBox("GPU 加速")
-        self.chk_hashcat.setChecked(True)
-        gl.addWidget(self.chk_hashcat, 2, 0, 1, 2)
         layout.addWidget(g)
+
+        # 引擎
+        eg = QGroupBox("破解引擎")
+        eg_layout = QVBoxLayout(eg)
+        self.chk_hashcat = QCheckBox("GPU 加速 (hashcat)")
+        self.chk_hashcat.setChecked(True)
+        eg_layout.addWidget(self.chk_hashcat)
+        layout.addWidget(eg)
         layout.addStretch()
 
 
@@ -1152,10 +1171,14 @@ class DictionaryTab(QWidget):
         self.chk_auto_rule = QCheckBox("启用 hashcat 规则增强")
         self.chk_auto_rule.setChecked(True)
         gl.addWidget(self.chk_auto_rule, 1, 0, 1, 2)
-        self.chk_hashcat = QCheckBox("GPU 加速")
-        self.chk_hashcat.setChecked(True)
-        gl.addWidget(self.chk_hashcat, 2, 0, 1, 2)
         layout.addWidget(g)
+
+        eg = QGroupBox("破解引擎")
+        eg_layout = QVBoxLayout(eg)
+        self.chk_hashcat = QCheckBox("GPU 加速 (hashcat)")
+        self.chk_hashcat.setChecked(True)
+        eg_layout.addWidget(self.chk_hashcat)
+        layout.addWidget(eg)
 
         hint = QLabel("推荐: rockyou.txt · github.com/danielmiessler/SecLists")
         hint.setObjectName("hint")
@@ -1251,8 +1274,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("ArchiveCracker v2.2")
-        self.setMinimumSize(820, 620)
-        self.resize(900, 700)
+        self.setMinimumSize(580, 440)
+        self.resize(960, 720)
 
         self.workers = []
         self._running = False
@@ -1365,20 +1388,19 @@ class MainWindow(QMainWindow):
         self.status_group.setVisible(False)
         main_v.addWidget(self.status_group)
 
-        # ── Activity log + result card ──
+        # ── 活动记录 + 结果卡片（QSplitter 分栏，可拖拽） ──
         log_group = QGroupBox("活动记录")
         log_h = QHBoxLayout(log_group)
-        log_h.setSpacing(12)
-
+        log_h.setSpacing(0)
         self.log_box = QTextEdit()
         self.log_box.setReadOnly(True)
         self.log_box.setMinimumHeight(120)
-        log_h.addWidget(self.log_box, 1)
+        log_h.addWidget(self.log_box)
 
-        # ── Result card (hidden) ──
+        # 结果卡片 (right side of splitter)
         self.result_card = QFrame()
         self.result_card.setObjectName("resultCard")
-        self.result_card.setFixedWidth(220)
+        self.result_card.setMinimumWidth(180)
         rc = QVBoxLayout(self.result_card)
         rc.setSpacing(10)
         rc.setContentsMargins(16, 16, 16, 16)
@@ -1389,6 +1411,7 @@ class MainWindow(QMainWindow):
         self.result_pw = QLabel("")
         self.result_pw.setStyleSheet("font-size: 20px; font-weight: 700; color: #00C853; padding: 4px 0;")
         self.result_pw.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.result_pw.setWordWrap(True)
         rc.addWidget(self.result_pw)
         copy_btn = QPushButton("📋  复制密码")
         copy_btn.setCursor(Qt.PointingHandCursor)
@@ -1396,9 +1419,14 @@ class MainWindow(QMainWindow):
         rc.addWidget(copy_btn)
         rc.addStretch()
         self.result_card.setVisible(False)
-        log_h.addWidget(self.result_card)
 
-        main_v.addWidget(log_group, 1)
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.addWidget(log_group)
+        splitter.addWidget(self.result_card)
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 1)
+        splitter.setSizes([600, 220])
+        main_v.addWidget(splitter, 1)
 
         # ── Timer for stats ──
         self._timer = QTimer()
@@ -1413,6 +1441,15 @@ class MainWindow(QMainWindow):
         self.lbl_algo.setObjectName("statusRight")
         self.statusBar.addPermanentWidget(self.lbl_algo)
         self._apply_tool_status()
+
+    def resizeEvent(self, event):
+        """窗口缩放时截断文件名显示省略号"""
+        super().resizeEvent(event)
+        if hasattr(self, '_file_name_full'):
+            metrics = self.file_name_label.fontMetrics()
+            w = self.file_name_label.width()
+            elided = metrics.elidedText(self._file_name_full, Qt.ElideRight, w)
+            self.file_name_label.setText(elided)
 
     def _apply_tool_status(self):
         """Show engine availability in the status bar and disable GPU
@@ -1460,6 +1497,7 @@ class MainWindow(QMainWindow):
             return
         self._file_path = p
         fname = os.path.basename(p)
+        self._file_name_full = fname
         self.file_name_label.setText(fname)
         # File size
         try:
