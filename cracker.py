@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QGridLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QSpinBox,
     QFileDialog, QTextEdit, QProgressBar, QGroupBox, QTabWidget,
+    QListWidget, QStackedWidget,
     QMessageBox, QComboBox, QDoubleSpinBox, QFrame, QSplitter,
     QRadioButton, QButtonGroup, QScrollArea, QSizePolicy
 )
@@ -199,6 +200,30 @@ QWidget {
     color: #212121;
     font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
     font-size: 12px;
+}
+
+/* ── ARCHPR 风格左侧模式列表 ── */
+QListWidget#modeList {
+    background: #FAFBFC;
+    border: none;
+    border-right: 1px solid #E2E6ED;
+    padding: 6px;
+    outline: none;
+}
+QListWidget#modeList::item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin: 2px 0;
+    color: #424242;
+    font-size: 12px;
+}
+QListWidget#modeList::item:hover {
+    background: #EEF2F8;
+}
+QListWidget#modeList::item:selected {
+    background: #0066FF;
+    color: #FFFFFF;
+    font-weight: 600;
 }
 
 /* ── Tab bar as segmented control ── */
@@ -484,6 +509,28 @@ QWidget {
 }
 
 QTabWidget::pane { border: none; background: transparent; }
+QListWidget#modeList {
+    background: #1B1E26;
+    border: none;
+    border-right: 1px solid #2A2F3A;
+    padding: 6px;
+    outline: none;
+}
+QListWidget#modeList::item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin: 2px 0;
+    color: #9CA3AF;
+    font-size: 12px;
+}
+QListWidget#modeList::item:hover {
+    background: #232834;
+}
+QListWidget#modeList::item:selected {
+    background: #3B82F6;
+    color: #FFFFFF;
+    font-weight: 600;
+}
 QTabBar { background: transparent; }
 QTabBar::tab {
     background: transparent;
@@ -842,17 +889,24 @@ class CPUWorker(QThread):
         try:
             if at == 'zip':
                 with zipfile.ZipFile(self.archive_path) as zf:
-                    # Reading one encrypted member is enough to validate the
-                    # password and is much faster/safer than extractall() for
-                    # every candidate.
-                    target = next((i for i in zf.infolist() if not i.is_dir()), None)
+                    # 必须挑"真正加密"的成员验证（flag_bits 第0位=加密）。
+                    # 用未加密成员验证会导致假阳性：open(pwd=...) 会忽略
+                    # 密码直接读成功，第一个候选就误报"找到"。
+                    target = next((i for i in zf.infolist()
+                                   if not i.is_dir() and (i.flag_bits & 0x1)), None)
                     if target is None:
+                        # 整个 zip 没有任何加密成员 → 无密码可破
                         return False
                     with zf.open(target, pwd=pwd.encode('utf-8')) as fp:
                         fp.read(64 * 1024)
                     return True
             elif at == 'rar' and HAS_RAR:
                 with rarfile.RarFile(self.archive_path) as rf:
+                    # rarfile 用 needs_password() 判断成员是否加密，
+                    # 未加密 rar 的 extractall(pwd=...) 同样会假阳性
+                    if not any(getattr(i, 'needs_password', lambda: False)()
+                               for i in rf.infolist()):
+                        return False
                     rf.extractall(path=tmpdir, pwd=pwd)
                     return True
             elif at == '7z':
@@ -1283,6 +1337,7 @@ class MainWindow(QMainWindow):
         self._total_tried = 0
         self._found_pw = None
         self._theme = "light"
+        self.setAcceptDrops(True)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -1326,19 +1381,35 @@ class MainWindow(QMainWindow):
 
         main_v.addLayout(top)
 
-        # ── Tabs ──
-        self.tabs = QTabWidget()
+        # ── ARCHPR 风格：左侧模式列表 + 右侧参数面板 ──
+        mode_split = QHBoxLayout()
+        mode_split.setSpacing(0)
+
+        self.mode_list = QListWidget()
+        self.mode_list.setObjectName("modeList")
+        self.mode_list.setFixedWidth(150)
+        self.mode_list.addItems([
+            "🔓 暴力破解",
+            "🎭 掩码攻击",
+            "📖 字典攻击",
+            "🔑 已知明文",
+            "🧮 CRC32碰撞",
+        ])
+        self.mode_list.setCurrentRow(0)
+
+        self.stack = QStackedWidget()
         self.bf_tab = BruteForceTab()
         self.mask_tab = MaskTab()
         self.dict_tab = DictionaryTab()
-        self.crc_tab = CRC32Tab()
         self.kpa_tab = KPATab()
-        self.tabs.addTab(self.bf_tab, "  暴力破解  ")
-        self.tabs.addTab(self.mask_tab, "  掩码攻击  ")
-        self.tabs.addTab(self.dict_tab, "  字典攻击  ")
-        self.tabs.addTab(self.crc_tab, "  CRC32碰撞  ")
-        self.tabs.addTab(self.kpa_tab, "  已知明文  ")
-        main_v.addWidget(self.tabs)
+        self.crc_tab = CRC32Tab()
+        for t in (self.bf_tab, self.mask_tab, self.dict_tab, self.kpa_tab, self.crc_tab):
+            self.stack.addWidget(t)
+
+        self.mode_list.currentRowChanged.connect(self.stack.setCurrentIndex)
+        mode_split.addWidget(self.mode_list)
+        mode_split.addWidget(self.stack, 1)
+        main_v.addLayout(mode_split, 1)
 
         # ── Single action button ──
         self.start_btn = QPushButton("▶  开始破解")
@@ -1495,6 +1566,10 @@ class MainWindow(QMainWindow):
                  "*.tar.xz *.txz *.cab *.arj *.iso);;所有文件 (*)")
         if not p:
             return
+        self._load_file(p)
+
+    def _load_file(self, p):
+        """加载压缩包文件并更新文件卡片（浏览/拖拽共用）"""
         self._file_path = p
         fname = os.path.basename(p)
         self._file_name_full = fname
@@ -1510,6 +1585,22 @@ class MainWindow(QMainWindow):
             self.file_size_label.setText("")
         fmt = self._detect_format(p)
         self.format_label.setText(fmt.upper() if fmt else "")
+
+    # ── Drag & drop 支持：拖压缩包文件进来直接加载，不用点浏览 ──
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        for url in event.mimeData().urls():
+            p = url.toLocalFile()
+            if p and os.path.isfile(p):
+                self._log(f"拖入压缩包: {os.path.basename(p)}")
+                self._load_file(p)
+                break
+        event.acceptProposedAction()
 
     def _detect_format(self, path):
         low = path.lower()
@@ -1573,12 +1664,12 @@ class MainWindow(QMainWindow):
         self._timer.start(500)
         self._log("开始破解")
 
-        tab_idx = self.tabs.currentIndex()
+        tab_idx = self.mode_list.currentRow()
         if tab_idx == 0: self._start_bruteforce(path, atype)
         elif tab_idx == 1: self._start_mask(path, atype)
         elif tab_idx == 2: self._start_dict(path, atype)
-        elif tab_idx == 3: self._start_crc32(path, atype)
-        elif tab_idx == 4: self._start_kpa(path, atype)
+        elif tab_idx == 3: self._start_kpa(path, atype)
+        elif tab_idx == 4: self._start_crc32(path, atype)
 
     # ── Stop ──
     def _stop(self):
