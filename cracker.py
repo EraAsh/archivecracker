@@ -1944,9 +1944,16 @@ class MainWindow(QMainWindow):
 #  Entry Point
 # ============================================================
 def main():
+    # 高 DPI 支持（必须在 QApplication 创建前设置，解决高分屏显示不全）
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
     app = QApplication(sys.argv)
     app.setStyleSheet(LIGHT_QSS)
     window = MainWindow()
+    # 初始窗口尺寸随 DPI 缩放（高分屏默认开大点，避免"拉大才显示全"）
+    dpr = app.primaryScreen().devicePixelRatio()
+    if dpr > 1.0:
+        window.resize(int(960 * dpr), int(720 * dpr))
     window.show()
     sys.exit(app.exec_())
 
