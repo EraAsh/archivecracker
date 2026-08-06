@@ -59,6 +59,7 @@ jobs:
         run: |
           python -m PyInstaller --onefile --windowed --name ArchiveCracker \
             --icon icon.ico \
+            --add-data "icon.ico;." \
             --hidden-import PyQt5 \
             --hidden-import rarfile \
             --hidden-import py7zr \

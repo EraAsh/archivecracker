@@ -1331,6 +1331,13 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(580, 440)
         self.resize(960, 720)
 
+        # 窗口图标（PyInstaller --onefile 下 icon.ico 会解压到临时目录，
+        # 用 sys._MEIPASS 找；源码运行则用项目目录）
+        icon_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+        icon_file = os.path.join(icon_path, 'icon.ico')
+        if os.path.isfile(icon_file):
+            self.setWindowIcon(QIcon(icon_file))
+
         self.workers = []
         self._running = False
         self._start_time = 0
