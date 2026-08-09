@@ -135,7 +135,23 @@ def _extract_hash_to_file(archive_path, archive_type, log=None):
     """Extract a hashcat-compatible hash into a tracked temp file.
 
     Returns (hash_file, error_message). hash_file is None on failure.
+    7z 优先用内置 Python 提取器（sevenzip2john），避免依赖 Perl 的 7z2john.pl。
     """
+    # ── 7z: 纯 Python 提取器（不依赖 Perl / 外部工具） ──
+    if archive_type == '7z':
+        try:
+            from sevenzip2john import sevenzip2john_file
+            h = sevenzip2john_file(archive_path)
+            if h:
+                hash_file = _make_temp_path(suffix='.hash')
+                with open(hash_file, 'w', encoding='utf-8') as f:
+                    f.write(h + '\n')
+                return hash_file, None
+        except Exception as e:
+            if log:
+                log(f"7z Python 提取失败: {e}，尝试外部工具")
+            # fallthrough 到外部 2john 工具
+
     john_tool = TOOLS_2JOHN_PATHS.get(archive_type)
     if not john_tool:
         return None, f"未找到 {archive_type}2john 工具"
