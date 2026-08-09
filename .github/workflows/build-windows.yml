@@ -41,7 +41,6 @@ jobs:
           # 把 2john exe 提升到顶层便于 find_tool 命中
           find . -name "zip2john.exe" -exec cp {} . \;
           find . -name "rar2john.exe" -exec cp {} . \;
-          find . -name "7z2john*" -exec cp {} . \; 2>/dev/null || true
           ls -la
 
       - name: Download hashcat (GPU engine)
@@ -60,6 +59,7 @@ jobs:
           python -m PyInstaller --onefile --windowed --name ArchiveCracker \
             --icon icon.ico \
             --add-data "icon.ico;." \
+            --hidden-import sevenzip2john \
             --hidden-import PyQt5 \
             --hidden-import rarfile \
             --hidden-import py7zr \
