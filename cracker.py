@@ -161,12 +161,13 @@ def _extract_hash_to_file(archive_path, archive_type, log=None):
             [john_tool, archive_path],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=60,
             encoding='utf-8',
             errors='replace',
+            cwd=os.path.dirname(john_tool),  # 与 hashcat 同理：从工具目录启动，避免 DLL/依赖缺失
         )
     except subprocess.TimeoutExpired:
-        return None, "哈希提取超时(30s)"
+        return None, "哈希提取超时(60s)"
     except OSError as e:
         return None, f"无法执行 {john_tool}: {e}"
     except Exception as e:
@@ -275,8 +276,8 @@ QGroupBox {
     color: #212121;
     border: 1px solid #E8E8E8;
     border-radius: 8px;
-    margin-top: 14px;
-    padding: 18px 16px 14px 16px;
+    margin-top: 8px;
+    padding: 10px 14px 10px 14px;
     background: #FAFAFA;
 }
 QGroupBox::title {
@@ -314,9 +315,9 @@ QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
     color: #212121;
     border: 1px solid #E0E0E0;
     border-radius: 6px;
-    padding: 7px 10px;
+    padding: 4px 8px;
     font-size: 12px;
-    min-height: 20px;
+    min-height: 18px;
     selection-background-color: #0066FF30;
 }
 QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
@@ -567,7 +568,7 @@ QTabBar::tab:hover { color: #D1D5DB; }
 QGroupBox {
     font-size: 13px; font-weight: 600; color: #F3F4F6;
     border: 1px solid #262B34; border-radius: 8px;
-    margin-top: 14px; padding: 18px 16px 14px 16px;
+    margin-top: 8px; padding: 10px 14px 10px 14px;
     background: #181C23;
 }
 QGroupBox::title {
@@ -584,7 +585,7 @@ QLabel#error { color: #EF4444; font-weight: 600; }
 QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
     background: #1A1F2B; color: #F3F4F6;
     border: 1px solid #262B34; border-radius: 6px;
-    padding: 7px 10px; font-size: 12px; min-height: 20px;
+    padding: 4px 8px; font-size: 12px; min-height: 18px;
 }
 QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
     border-color: #3B82F6;
