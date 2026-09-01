@@ -794,9 +794,15 @@ class HashcatWorker(QThread):
                 result_file = self.args[i + 1]
                 break
         try:
+            # 必须从 hashcat 所在目录启动，否则 hashcat 找不到相对路径的
+            # OpenCL/ 与 modules/ 内核目录，导致 GPU 初始化失败（报
+            # `./OpenCL/: No such file or directory`），GPU 加速用不了。
+            # 见 passcracker skill 2026-09-01 实测。
+            hc_cwd = os.path.dirname(os.path.abspath(HASHCAT_BIN))
             self.process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, universal_newlines=True, encoding='utf-8', errors='replace'
+                text=True, universal_newlines=True, encoding='utf-8', errors='replace',
+                cwd=hc_cwd
             )
             for line in self.process.stdout:
                 if self._stop:
@@ -1343,9 +1349,17 @@ class KPATab(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ArchiveCracker v2.2")
-        self.setMinimumSize(580, 440)
-        self.resize(960, 720)
+        self.setWindowTitle("ArchiveCracker v2.3")
+        self.setMinimumSize(720, 560)
+        # 默认窗口尽量取屏幕可用区（1080p 全高，宽留余量），避免"拉大才看全"
+        screen = QApplication.primaryScreen()
+        if screen is not None:
+            avail = screen.availableGeometry()
+            w = min(1040, avail.width() - 60)
+            h = min(860, avail.height() - 80)
+            self.resize(w, h)
+        else:
+            self.resize(960, 720)
 
         # 窗口图标（PyInstaller --onefile 下 icon.ico 会解压到临时目录，
         # 用 sys._MEIPASS 找；源码运行则用项目目录）
@@ -2064,10 +2078,9 @@ def main():
     app = QApplication(sys.argv)
     app.setStyleSheet(LIGHT_QSS)
     window = MainWindow()
-    # 初始窗口尺寸随 DPI 缩放（高分屏默认开大点，避免"拉大才显示全"）
-    dpr = app.primaryScreen().devicePixelRatio()
-    if dpr > 1.0:
-        window.resize(int(960 * dpr), int(720 * dpr))
+    # 默认窗口尺寸已在 MainWindow.__init__ 里按屏幕可用区设置（含 DPI 缩放）。
+    # 开启 AA_EnableHighDpiScaling 后 Qt 会自行缩放逻辑坐标，这里不要再手动乘
+    # devicePixelRatio，否则高分屏下双重放大导致内容拥挤（2026-09-01 修复）。
     window.show()
     sys.exit(app.exec_())
 
