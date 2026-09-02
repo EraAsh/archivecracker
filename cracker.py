@@ -870,6 +870,7 @@ class _IndexChunk:
 # ============================================================
 class CPUWorker(QThread):
     progress = pyqtSignal(int)
+    current = pyqtSignal(str)  # 实时回显当前尝试的密码
     found = pyqtSignal(str)
     speed = pyqtSignal(float)
     finished_signal = pyqtSignal()
@@ -893,6 +894,7 @@ class CPUWorker(QThread):
             self._local_count += 1
             if self._local_count % 100 == 0:
                 self.progress.emit(100)
+                self.current.emit(pwd)
             try:
                 if self._check(pwd):
                     self.found.emit(pwd)
@@ -1494,6 +1496,22 @@ class MainWindow(QMainWindow):
         stats_row.addStretch()
         sg.addLayout(stats_row)
 
+        # ── 当前尝试密码（ARCHPR 风格实时回显） ──
+        cur_row = QHBoxLayout()
+        cur_lbl = QLabel("正在尝试")
+        cur_lbl.setObjectName("hint")
+        cur_row.addWidget(cur_lbl)
+        self.lbl_current = QLabel("—")
+        self.lbl_current.setObjectName("currentPwd")
+        self.lbl_current.setStyleSheet(
+            "font-family:'Consolas','Courier New',monospace; font-size:13px;"
+            " font-weight:600; color:#0066FF; background:#F0F4FF;"
+            " border:1px solid #D6E4FF; border-radius:4px; padding:3px 8px;")
+        self.lbl_current.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        cur_row.addWidget(self.lbl_current)
+        cur_row.addStretch()
+        sg.addLayout(cur_row)
+
         self.status_group.setVisible(False)
         main_v.addWidget(self.status_group)
 
@@ -1680,6 +1698,7 @@ class MainWindow(QMainWindow):
         self._found_pw = None
         self.progress_bar.setValue(0)
         self.lbl_pct.setText("0%")
+        self.lbl_current.setText("—")
         self.result_card.setVisible(False)
         self.log_box.clear()
 
@@ -1805,6 +1824,9 @@ class MainWindow(QMainWindow):
     def _on_speed(self, spd):
         self.lbl_speed.setText(f"{spd:,.0f} 次/秒")
 
+    def _on_current(self, pwd):
+        self.lbl_current.setText(pwd)
+
     def _on_hashcat_progress(self, line):
         if "Progress" in line and ":" in line:
             try:
@@ -1887,6 +1909,7 @@ class MainWindow(QMainWindow):
             w = CPUWorker(self._bf_path, self._bf_atype, chunk, name=f"bf-{length}-{tid}")
             w.found.connect(self._on_found)
             w.progress.connect(self._on_progress)
+            w.current.connect(self._on_current)
             w.finished_signal.connect(self._on_bf_len_finished)
             self.workers.append(w)
             w.start()
@@ -1933,6 +1956,7 @@ class MainWindow(QMainWindow):
                 w = CPUWorker(path, atype, pws[i:i+chunk_size], name="mask")
                 w.found.connect(self._on_found)
                 w.progress.connect(self._on_progress)
+                w.current.connect(self._on_current)
                 w.finished_signal.connect(self._on_worker_finished)
                 self.workers.append(w); w.start()
 
@@ -1999,6 +2023,7 @@ class MainWindow(QMainWindow):
                 w = CPUWorker(path, atype, pws[i:i+chunk_size], name="dict")
                 w.found.connect(self._on_found)
                 w.progress.connect(self._on_progress)
+                w.current.connect(self._on_current)
                 w.finished_signal.connect(self._on_worker_finished)
                 self.workers.append(w); w.start()
 
