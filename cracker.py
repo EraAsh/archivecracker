@@ -1353,7 +1353,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("ArchiveCracker v2.3")
-        self.setMinimumSize(720, 560)
+        self.setMinimumSize(760, 640)
         # 默认窗口尽量取屏幕可用区（1080p 全高，宽留余量），避免"拉大才看全"
         screen = QApplication.primaryScreen()
         if screen is not None:
@@ -1447,9 +1447,12 @@ class MainWindow(QMainWindow):
             self.stack.addWidget(t)
 
         self.mode_list.currentRowChanged.connect(self.stack.setCurrentIndex)
+        # 配置区是主内容，给定高权重；stack 设最小高度防止被底部日志挤压成细缝
+        self.stack.setMinimumHeight(400)
         mode_split.addWidget(self.mode_list)
         mode_split.addWidget(self.stack, 1)
-        main_v.addLayout(mode_split, 1)
+
+        main_v.addLayout(mode_split, 4)
 
         # ── Single action button ──
         self.start_btn = QPushButton("▶  开始破解")
@@ -1553,6 +1556,8 @@ class MainWindow(QMainWindow):
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 1)
         splitter.setSizes([600, 220])
+        # 日志区设最大高度，防止运行时/日志展开后把上方配置区压成细缝
+        splitter.setMaximumHeight(260)
         main_v.addWidget(splitter, 1)
 
         # ── Timer for stats ──
