@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArchiveCracker UI 原型预览</title>
+<style>
+  :root{
+    --accent:#0066FF;
+    --accent-weak:#E8F0FF;
+    --bg:#F5F7FA;
+    --surface:#FFFFFF;
+    --border:#E4E8EF;
+    --text:#1A2533;
+    --text-2:#5A6B7F;
+    --text-3:#8A97A8;
+    --ok:#00C853;
+    --err:#EF4444;
+    --radius:12px;
+    --shadow:0 2px 10px rgba(16,42,80,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Microsoft YaHei UI','PingFang SC','Segoe UI',sans-serif;
+    font-size:14px;line-height:1.5;
+    padding:24px;min-height:100vh;
+  }
+
+  /* 宽度模拟条 */
+  .sim-bar{
+    max-width:1040px;margin:0 auto 12px;
+    display:flex;align-items:center;gap:10px;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:8px;padding:8px 14px;
+  }
+  .sim-bar span{font-size:12px;color:var(--text-2);white-space:nowrap}
+  .sim-bar input[type=range]{flex:1;accent-color:var(--accent)}
+  .sim-bar .val{font-size:13px;font-weight:600;color:var(--accent);min-width:60px}
+
+  .app{
+    max-width:1040px;margin:0 auto;
+    display:flex;flex-direction:column;gap:14px;
+    transition:all .2s;
+  }
+
+  /* 文件栏 */
+  .filebar{
+    display:flex;align-items:center;gap:14px;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:14px 18px;box-shadow:var(--shadow);
+  }
+  .filebar .icon{font-size:24px;flex-shrink:0}
+  .filebar .info{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+  .filebar .fname{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .filebar .fmeta{color:var(--text-3);font-size:12px}
+  .filebar .format{color:var(--accent);font-weight:600;font-size:13px;flex-shrink:0}
+  .filebar .switch{flex-shrink:0}
+  .filebar .theme{width:36px;height:36px;border:1px solid var(--border);border-radius:8px;
+    background:var(--surface);cursor:pointer;font-size:16px;flex-shrink:0}
+
+  /* Tab */
+  .tabs{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  .tabhead{display:flex;border-bottom:1px solid var(--border);background:#FAFBFD;overflow-x:auto}
+  .tabhead button{
+    flex:1;padding:12px 8px;border:none;background:transparent;
+    font:inherit;font-size:13px;color:var(--text-2);
+    cursor:pointer;border-bottom:3px solid transparent;
+    transition:.2s;white-space:nowrap;min-width:0;
+  }
+  .tabhead button.active{color:var(--accent);font-weight:600;border-bottom-color:var(--accent)}
+  .tabbody{padding:18px}
+
+  .field-grid{display:grid;gap:16px}
+  .panel{
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 18px;background:var(--surface);
+  }
+  .panel h4{font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:12px;letter-spacing:.02em}
+  .panel h4 .tag{font-size:11px;color:var(--accent);background:var(--accent-weak);padding:1px 8px;border-radius:99px;margin-left:8px;font-weight:500}
+
+  .charset{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{padding:7px 14px;border-radius:99px;border:1px solid var(--border);background:var(--surface);cursor:pointer;user-select:none;font-size:13px;color:var(--text-2)}
+  .chip.on{border-color:var(--accent);background:var(--accent-weak);color:var(--accent);font-weight:500}
+
+  .param-row{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+  .param-row .label{width:90px;color:var(--text-2);font-size:13px;flex-shrink:0}
+  .param-row input[type=number]{width:110px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font:inherit;color:var(--text)}
+  .param-row .unit{color:var(--text-3);font-size:12px}
+  .hint{color:var(--text-3);font-size:12px;margin-top:10px;line-height:1.6}
+
+  .engine-row{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .engine-row label{font-size:13px;color:var(--text-2);display:flex;align-items:center;gap:6px;cursor:pointer}
+  .engine-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent)}
+
+  .adv-toggle{margin-top:12px;padding:8px 12px;border:1px dashed var(--border);border-radius:8px;background:var(--surface);cursor:pointer;font-size:12px;color:var(--text-2);width:100%;text-align:left}
+
+  .go{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .go button{flex:1;min-width:140px;padding:13px;border:none;border-radius:var(--radius);background:var(--accent);color:#fff;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+  .go .gpu-note{color:var(--text-3);font-size:12px}
+
+  .run{display:grid;gap:14px}
+  .status-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .status-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .status-top h4{font-size:13px;font-weight:600}
+  .status-top .pct{color:var(--accent);font-size:20px;font-weight:700}
+  .bar{height:6px;background:var(--accent-weak);border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;width:47%;background:var(--accent);border-radius:99px}
+  .metrics{display:flex;gap:32px;margin-top:14px;flex-wrap:wrap}
+
+  .metric .num{font-size:15px;font-weight:600}
+  .metric .lab{color:var(--text-3);font-size:12px;margin-top:2px}
+
+  .bottom{display:grid;grid-template-columns:1fr 280px;gap:14px}
+  .log-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  .log-panel h4{padding:13px 18px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border)}
+  .log-body{height:180px;padding:12px 18px;font-family:Consolas,monospace;font-size:12px;color:var(--text-2);line-height:1.8;overflow:auto}
+  .log-body .t{color:var(--text-3);margin-right:10px}
+  .log-body .ok{color:var(--ok)}
+  .log-body .run{color:var(--accent)}
+
+  .result-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
+  .result-panel .rx{color:var(--ok);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .result-panel .pw{font-size:22px;font-weight:700;color:var(--ok);word-break:break-all}
+  .result-panel button{padding:9px;border:none;border-radius:8px;background:var(--accent-weak);color:var(--accent);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+
+  .foot{color:var(--text-3);font-size:12px;text-align:center;padding:6px 0 2px}
+  .foot code{background:#E9EDF4;padding:1px 6px;border-radius:4px}
+
+  /* ========== 响应式 ========== */
+
+  /* 窄窗口 (< 800px): 底部上下排 */
+  @media (max-width:800px){
+    .bottom{grid-template-columns:1fr}
+    .result-panel{flex-direction:row;align-items:center;flex-wrap:wrap;gap:12px}
+    .result-panel .pw{font-size:18px}
+    .tabhead button{font-size:12px;padding:10px 4px}
+    .filebar .fmeta{display:none}
+    .go .gpu-note{display:none}
+  }
+
+  /* 很窄 (< 550px): 参数行换行 */
+  @media (max-width:550px){
+    body{padding:8px}
+    .app{gap:10px}
+    .tabbody{padding:10px}
+    .field-grid{gap:10px}
+    .panel{padding:12px 14px}
+    .param-row .label{width:auto}
+    .metrics{gap:18px}
+    .filebar .format{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- 窗口宽度模拟 -->
+<div class="sim-bar">
+  <span>窗口宽度模拟</span>
+  <input type="range" id="sim" min="400" max="1040" value="1040" step="1">
+  <span class="val" id="simVal">1040px</span>
+</div>
+
+<div class="app" id="app">
+
+  <div class="filebar">
+    <span class="icon">📦</span>
+    <div class="info">
+      <span class="fname">secret_backup.zip</span>
+      <span class="fmeta">4.2 MB · 3 个文件</span>
+    </div>
+    <span class="format">ZIP</span>
+    <button class="switch">更换文件</button>
+    <button class="theme" title="切换深浅色">🌙</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tabhead">
+      <button class="active">暴力破解</button>
+      <button>掩码攻击</button>
+      <button>字典攻击</button>
+      <button>CRC32 碰撞</button>
+      <button>已知明文</button>
+    </div>
+    <div class="tabbody">
+      <div class="field-grid">
+        <div class="panel">
+          <h4>字符集</h4>
+          <div class="charset">
+            <span class="chip on">小写字母 a-z</span>
+            <span class="chip">大写字母 A-Z</span>
+            <span class="chip on">数字 0-9</span>
+            <span class="chip">特殊字符 !@#$</span>
+          </div>
+          <button class="adv-toggle">+ 自定义字符集</button>
+        </div>
+        <div class="panel">
+          <h4>参数<span class="tag">必填</span></h4>
+          <div class="param-row">
+            <span class="label">最小长度</span>
+            <input type="number" value="1">
+            <span class="unit">位</span>
+          </div>
+          <div class="param-row">
+            <span class="label">最大长度</span>
+            <input type="number" value="8">
+            <span class="unit">位</span>
+          </div>
+          <div class="param-row">
+            <span class="label">线程数</span>
+            <input type="number" value="8">
+            <span class="unit">1-64</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h4>破解引擎</h4>
+          <div class="engine-row">
+            <label><input type="checkbox" checked> CPU</label>
+            <label><input type="checkbox"> GPU 加速 (hashcat)</label>
+          </div>
+          <div class="hint">选择 CPU 或 GPU，或两者并行。GPU 需单独安装 hashcat。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="go">
+    <button>▶ 开始破解</button>
+    <span class="gpu-note">GPU: hashcat ✓  ·  KPA: bkcrack ✓</span>
+  </div>
+
+  <div class="run">
+    <div class="status-panel">
+      <div class="status-top">
+        <h4>破解进度</h4>
+        <span class="pct">47%</span>
+      </div>
+      <div class="bar"><i></i></div>
+      <div class="metrics">
+        <div class="metric"><div class="num">128,940 / 274,536</div><div class="lab">已尝试</div></div>
+        <div class="metric"><div class="num">1,842 /s</div><div class="lab">当前速度</div></div>
+        <div class="metric"><div class="num">00:03:42</div><div class="lab">已耗时</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="log-panel">
+      <h4>活动记录</h4>
+      <div class="log-body">
+        <div><span class="t">12:04:31</span><span class="run">▶ 开始暴力破解 (ZIP)</span></div>
+        <div><span class="t">12:04:31</span>加载引擎 CPU+GPU ...</div>
+        <div><span class="t">12:04:32</span>候选集合 274,536 个密码</div>
+        <div><span class="t">12:05:02</span><span class="run">▶ 已尝试 92,181 次 ...</span></div>
+        <div><span class="t">12:06:12</span><span class="ok">✓ 找到密码，耗时 00:03:41</span></div>
+        <div><span class="t">12:06:12</span>结果已就绪</div>
+      </div>
+    </div>
+    <div class="result-panel">
+      <span class="rx">✓ 密码已找到</span>
+      <span class="pw">sunset0921</span>
+      <button>📋 复制密码</button>
+    </div>
+  </div>
+
+  <div class="foot">原型预览 · 拖动上方滑块模拟不同窗口宽度 · 实际以 PyQt 实现为准</div>
+</div>
+
+<script>
+  // 宽度模拟
+  var s=document.getElementById('sim'),v=document.getElementById('simVal'),a=document.getElementById('app');
+  s.addEventListener('input',function(){var w=this.value;v.textContent=w+'px';a.style.maxWidth=w+'px'});
+  // tab 切换
+  document.querySelectorAll('.tabhead button').forEach(function(b){
+    b.addEventListener('click',function(){document.querySelectorAll('.tabhead button').forEach(function(bb){bb.classList.remove('active')});b.classList.add('active')});
+  });
+  // chip
+  document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){c.classList.toggle('on')})});
+</script>
+</body>
+</html>

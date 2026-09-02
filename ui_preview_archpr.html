@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>ArchiveCracker - ARCHPR 风格原型</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Microsoft YaHei',sans-serif; background:#f0f2f5; color:#333; padding:24px; }
+.app { max-width:900px; margin:0 auto; background:#fff; border-radius:12px; overflow:hidden;
+       box-shadow:0 2px 12px rgba(0,0,0,.08); border:1px solid #e2e6ed; }
+
+/* ── 顶栏 ── */
+.topbar { display:flex; align-items:center; gap:10px; padding:14px 20px;
+          border-bottom:1px solid #e2e6ed; background:#fafbfc; }
+.topbar .logo { font-size:20px; }
+.topbar .title { font-weight:700; font-size:15px; }
+.topbar .file { flex:1; margin-left:12px; padding:8px 12px; background:#fff;
+       border:1px dashed #b8c4d4; border-radius:8px; font-size:13px; color:#6b7684;
+       display:flex; align-items:center; gap:8px; }
+.topbar .file:hover { border-color:#0066FF; color:#0066FF; }
+.topbar .btn { padding:7px 16px; border-radius:8px; font-size:13px; cursor:pointer;
+       border:1px solid #d0d7e2; background:#fff; }
+.topbar .btn:hover { border-color:#0066FF; color:#0066FF; }
+
+/* ── 主体：左列表 + 右参数 ── */
+.main { display:flex; min-height:340px; }
+.side { width:170px; border-right:1px solid #e2e6ed; background:#fafbfc; padding:10px; }
+.side .mode { padding:10px 12px; border-radius:8px; font-size:13px; cursor:pointer;
+       margin-bottom:2px; display:flex; align-items:center; gap:8px; }
+.side .mode:hover { background:#eef2f8; }
+.side .mode.active { background:#0066FF; color:#fff; font-weight:600; }
+.side .mode small { display:block; font-size:11px; opacity:.7; font-weight:400; }
+.right { flex:1; padding:18px 22px; }
+
+/* ── 参数卡片 ── */
+.sec { background:#fafbfc; border:1px solid #e2e6ed; border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+.sec h3 { font-size:13px; color:#0066FF; margin-bottom:10px; font-weight:600; }
+.row { display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:13px; flex-wrap:wrap; }
+.row label { width:90px; color:#6b7684; }
+.row input[type=text], .row select { flex:1; min-width:120px; padding:7px 10px; border:1px solid #d0d7e2;
+       border-radius:8px; font-size:13px; }
+.row input[type=number] { width:70px; padding:7px 10px; border:1px solid #d0d7e2; border-radius:8px; font-size:13px; }
+.chk { display:flex; align-items:center; gap:6px; font-size:13px; margin-right:14px; }
+.chk input { accent-color:#0066FF; }
+.pills { display:flex; gap:8px; flex-wrap:wrap; }
+.pill { padding:6px 12px; border-radius:999px; border:1px solid #d0d7e2; font-size:12px; cursor:pointer; }
+.pill:hover { border-color:#0066FF; color:#0066FF; }
+.pill.on { background:#e8f0ff; border-color:#0066FF; color:#0066FF; font-weight:600; }
+
+/* ── 底栏：进度 ── */
+.foot { border-top:1px solid #e2e6ed; padding:14px 20px; background:#fafbfc; }
+.prog-track { height:8px; background:#e8ecf2; border-radius:4px; overflow:hidden; }
+.prog-fill { height:100%; width:35%; background:linear-gradient(90deg,#0066FF,#3d8bff); }
+.stat-row { display:flex; justify-content:space-between; margin-top:10px; font-size:12px; color:#6b7684; }
+.stat-row b { color:#333; font-weight:600; }
+.start { display:flex; justify-content:flex-end; margin-top:12px; }
+.start .go { background:#0066FF; color:#fff; border:none; padding:10px 34px; border-radius:10px;
+       font-size:14px; font-weight:600; cursor:pointer; }
+.start .go:hover { background:#0052d6; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <span class="logo">📦</span>
+    <span class="title">ArchiveCracker</span>
+    <div class="file">📁 将压缩包拖拽到此处，或点击选择文件</div>
+    <button class="btn">🌙 深色</button>
+  </div>
+
+  <div class="main">
+    <!-- 左侧攻击模式列表 -->
+    <div class="side">
+      <div class="mode active">🔓 暴力破解<small>Brute-force</small></div>
+      <div class="mode">🎭 掩码攻击<small>Mask attack</small></div>
+      <div class="mode">📖 字典攻击<small>Dictionary</small></div>
+      <div class="mode">🔑 已知明文<small>Known Plaintext</small></div>
+      <div class="mode">🧮 CRC32 碰撞<small>CRC32</small></div>
+    </div>
+
+    <!-- 右侧参数 -->
+    <div class="right">
+      <div class="sec">
+        <h3>字符集</h3>
+        <div class="pills">
+          <span class="pill on">纯数字 0-9</span>
+          <span class="pill">小写 a-z</span>
+          <span class="pill">大写 A-Z</span>
+          <span class="pill">字母+数字</span>
+          <span class="pill">全部字符</span>
+          <span class="pill">自定义</span>
+        </div>
+      </div>
+      <div class="sec">
+        <h3>密码长度</h3>
+        <div class="row">
+          <label>最短长度</label><input type="number" value="1">
+          <label>最长长度</label><input type="number" value="6">
+        </div>
+      </div>
+      <div class="sec">
+        <h3>引擎</h3>
+        <div class="row">
+          <span class="chk"><input type="checkbox" checked> GPU 加速 (hashcat)</span>
+          <span class="chk"><input type="checkbox" checked> CPU 多线程</span>
+          <span style="font-size:12px;color:#6b7684">线程数</span>
+          <input type="number" value="8" style="width:60px;padding:6px 8px;border:1px solid #d0d7e2;border-radius:8px">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底栏 -->
+  <div class="foot">
+    <div class="prog-track"><div class="prog-fill"></div></div>
+    <div class="stat-row">
+      <span>已尝试 <b>3,412,881</b> 组合</span>
+      <span>速度 <b>285,000/s</b></span>
+      <span>已用 <b>00:00:12</b></span>
+      <span>预计剩余 <b>00:41:05</b></span>
+    </div>
+    <div class="start"><button class="go">▶ 开始破解</button></div>
+  </div>
+</div>
+</body>
+</html>
